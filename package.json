@@ -1,0 +1,41 @@
+{
+  "name": "data-extension",
+  "version": "1.0.0",
+  "private": "true",
+  "description": "Custom data extension library",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/app",
+    "dev": "npx nodemon",
+    "test": "npx jest --passWithNoTests",
+    "lint": "npx eslint src --fix",
+    "format": "npx prettier --write src"
+  },
+  "keywords": [
+    "node",
+    "js",
+    "backend"
+  ],
+  "author": "Hung-Chou Tai",
+  "license": "ISC",
+  "dependencies": {
+    "@hapi/boom": "^9.1.2",
+    "axios": "^0.21.1",
+    "body-parser": "^1.19.0",
+    "cors": "^2.8.5",
+    "dotenv": "^8.2.0",
+    "ejs": "^3.1.6",
+    "express": "^4.17.1",
+    "mongoose": "^5.12.3",
+    "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "bunyan": "^1.8.15",
+    "eslint": "^7.24.0",
+    "eslint-config-prettier": "^6.15.0",
+    "eslint-plugin-prettier": "^3.3.1",
+    "jest": "^26.6.3",
+    "nodemon": "^2.0.7",
+    "prettier": "^2.2.1"
+  }
+}
