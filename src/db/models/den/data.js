@@ -6,7 +6,7 @@ const Data = mongoose.Schema(
     origin: { type: mongoose.Schema.Types.String, required: true },
     data: { type: mongoose.Schema.Types.Mixed, required: true },
   },
-  {collection: "data"}
+  { collection: "data" }
   //{ timestamps: true, collection: "data" }
 );
 

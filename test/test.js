@@ -8,13 +8,15 @@ mongoose.connect(process.env.MONGO_DB_DEN, {
     useUnifiedTopology: true,
 });
 
+let dataField = "metadata";
+
 const {init, extend} = require("../src");
 
-init(mongoose);
+init(mongoose, {data: {schemaName: dataField}});
 
-let EmployeeSchema = require("./model/employee");
+let EmployeeSchema = require("../src/db/models/test/employee");
 
-EmployeeSchema = extend({name: "employee", schema: EmployeeSchema, metamodels: ["data", "tags"], inlineWithObject: false});
+EmployeeSchema = extend(router, {name: "employee", schema: EmployeeSchema, metamodels: ["data", "tags"], inlineWithObject: true});
 
 let EmployeeModel = mongoose.model("employee", EmployeeSchema);
 
@@ -55,14 +57,14 @@ async function updateMany(firstName, john) {
 
 async function run() {
     let john;
-    john = await create({firstName: "John", lastName: "Doe", foo: "bar", data: {ssn: '11111111', gender: 'm'}, tags: ["vip", "sales"]});
+    john = await create({firstName: "John", lastName: "Doe", foo: "bar", [dataField]: {ssn: '11111111', gender: 'm'}, tags: ["vip", "sales"]});
     john = await getOneById(john._id);
     //john = await getOneByName("bob");
     console.log("one", john)
     john.firstName = "Bob";
-    john.data.ssn = '444444';
+    john[dataField].ssn = '444444';
     //await updateById(john._id, john);
-    await updateMany('John', {firstName: 'bob', data: {ssn: '999999'}});
+    await updateMany('John', {firstName: 'bob', [dataField]: {ssn: '999999'}});
     //console.log("updated john", john)
     await getEmployees("bob");
     process.exit();

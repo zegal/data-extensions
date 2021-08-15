@@ -46,29 +46,35 @@ function createConnection(key, uri) {
   return mongoose;
 }
 
-function loadModels(mongoose, dir = `${modelsDir}den`) {
-  console.log("loadModels", dir);
+function loadModels(mongoose, databaseOptions, dir = `${modelsDir}den`) {
   fs.readdirSync(dir).forEach(function (file) {
     let schemaName = file.split(".")[0];
+
     const schemaFile = dir + "/" + schemaName;
     const schema = require(schemaFile);
 
     // schema names are lower case
     schemas[schemaName] = schema;
-    models[schemaName] = mongoose.model(schemaName, schema);
+
+    /* see if databaseOptions has a new name for schemaName */
+    let collectionName =
+      (databaseOptions &&
+        databaseOptions[schemaName] &&
+        databaseOptions[schemaName].schemaName) ||
+      schemaName;
+
+    models[schemaName] = mongoose.model(schemaName, schema, collectionName);
   });
 }
 
-function init({loadModels = true}) {
+function init({ loadModels = true }) {
   for (let key in connEnvVariables) {
     let uri = connEnvVariables[key];
     let mongoose = createConnection(key, uri);
 
-    if(loadModels)
-      loadModels(mongoose, modelsDir + key);
+    if (loadModels) loadModels(mongoose, null, modelsDir + key);
     databases[key] = mongoose;
   }
 }
-
 
 module.exports = { init, loadModels, databases, schemas, models };

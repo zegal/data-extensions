@@ -5,7 +5,7 @@
   "description": "Custom data extension library",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/app",
+    "start": "node test/app",
     "dev": "npx nodemon",
     "test": "npx jest --passWithNoTests",
     "lint": "npx eslint src --fix",

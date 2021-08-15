@@ -6,21 +6,27 @@ const path = require("path");
 
 const cors = require("cors");
 
-const { log } = require("./commons/logger/app");
-const router = require("./api/http/routes/router");
+const { log } = require("../src/commons/logger/app");
+
+const Mongoose = require("mongoose").Mongoose; // to make diff instance of mongoose as we have to connect 2 db
+
+let mongoose = new Mongoose();
+mongoose.connect(process.env.MONGO_DB_DEN, {
+    useNewUrlParser: true,
+    useFindAndModify: false,
+    useUnifiedTopology: true,
+});
+
+const {init, extend} = require("../src");
 
 const app = express();
+
+const router = express.Router();
 
 /* required for EJS */
 const morgan = require("morgan");
 app.use(morgan("combined"));
 
-app.set("views", path.join(__dirname, "./views"));
-app.set("view engine", "ejs");
-app.use(express.static(path.join(__dirname, "./public")));
-
-// Init connection;
-require("./commons/database/app");
 
 //allow CORS on all requests
 
@@ -53,7 +59,17 @@ app.use(cors(corsOptions));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 
-app.use("*", router);
+app.use("/", router);
+
+init(mongoose, null, router, {});
+
+let EmployeeSchema = require("../src/db/models/test/employee");
+
+EmployeeSchema = extend({name: "employee", schema: EmployeeSchema, metamodels: ["data", "tags"], inlineWithObject: true});
+
+let EmployeeModel = mongoose.model("employee", EmployeeSchema);
+
+
 
 app.listen(process.env.APIPORT, () => {
   log.info(`Server started on ${process.env.APIPORT}`);
