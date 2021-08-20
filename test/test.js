@@ -16,7 +16,7 @@ init(mongoose, {data: {schemaName: dataField}});
 
 let EmployeeSchema = require("../src/db/models/test/employee");
 
-EmployeeSchema = extend(router, {name: "employee", schema: EmployeeSchema, metamodels: ["data", "tags"], inlineWithObject: true});
+EmployeeSchema = extend({name: "employee", schema: EmployeeSchema, metamodels: ["data", "tags"], inlineWithObject: false});
 
 let EmployeeModel = mongoose.model("employee", EmployeeSchema);
 
@@ -28,6 +28,16 @@ async function create(data) {
 async function getEmployees(firstName) {
     console.log("getEmployees", firstName)
     let johns = await EmployeeModel.find({firstName: firstName}).lean();
+    johns.forEach(item => {
+        console.log(item);
+    })
+}
+
+async function getEmployeesAgg(firstName) {
+    console.log("getEmployeesAgg", firstName)
+    let johns = await EmployeeModel.aggregate([
+        {$match: {firstName: firstName}}
+    ]).allowDiskUse(true);
     johns.forEach(item => {
         console.log(item);
     })
@@ -57,16 +67,17 @@ async function updateMany(firstName, john) {
 
 async function run() {
     let john;
-    john = await create({firstName: "John", lastName: "Doe", foo: "bar", [dataField]: {ssn: '11111111', gender: 'm'}, tags: ["vip", "sales"]});
-    john = await getOneById(john._id);
+    //john = await create({firstName: "John", lastName: "Doe", foo: "bar", [dataField]: {ssn: '11111111', gender: 'm'}, tags: ["vip", "sales"]});
+    //john = await getOneById(john._id);
     //john = await getOneByName("bob");
-    console.log("one", john)
-    john.firstName = "Bob";
-    john[dataField].ssn = '444444';
+    //console.log("one", john)
+    //john.firstName = "Bob";
+    //john[dataField].ssn = '444444';
     //await updateById(john._id, john);
-    await updateMany('John', {firstName: 'bob', [dataField]: {ssn: '999999'}});
-    //console.log("updated john", john)
-    await getEmployees("bob");
+    //await updateMany('John', {firstName: 'bob', [dataField]: {ssn: '999999'}});
+    //console.log("updated john", john) */
+    //await getEmployees("bob");
+    await getEmployeesAgg("Bob");
     process.exit();
 }
 

@@ -10,6 +10,8 @@ const { log } = require("../src/commons/logger/app");
 
 const Mongoose = require("mongoose").Mongoose; // to make diff instance of mongoose as we have to connect 2 db
 
+const {ObjectId} = require("mongodb");
+
 let mongoose = new Mongoose();
 mongoose.connect(process.env.MONGO_DB_DEN, {
     useNewUrlParser: true,
@@ -61,14 +63,19 @@ app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 
 app.use("/", router);
 
-init(mongoose, null, router, {});
+init(mongoose, {data: {schemaName: "metadata"}}, router, {});
 
 let EmployeeSchema = require("../src/db/models/test/employee");
 
-EmployeeSchema = extend({name: "employee", schema: EmployeeSchema, metamodels: ["data", "tags"], inlineWithObject: true});
+EmployeeSchema = extend({name: "employee", schema: EmployeeSchema, metamodels: ["data", "tags"], inlineWithObject: false});
 
 let EmployeeModel = mongoose.model("employee", EmployeeSchema);
 
+app.use("/employee/:id", async (req, res) => {
+  let result = await EmployeeModel.findOne({_id: ObjectId(req.params.id)});
+  console.log("result", result);
+  res.send(result);
+})
 
 
 app.listen(process.env.APIPORT, () => {

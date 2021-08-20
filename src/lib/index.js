@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const { schemas, models } = require("../commons/database/app");
+const { schemas, models, options } = require("../commons/database/app");
 
 const { addSchema } = require("../api/http/routes/router");
 
@@ -23,13 +23,13 @@ function extend({
     throw new Error("name, schema, metamodels are required");
   addSchema(name);
   metamodels.forEach((item) => {
-    let collectionName = models[item].collection.collectionName;
+    let collectionName = (options[item] && options[item].schemaName) || item;
 
     if (inlineWithObject) {
       const field = { [collectionName]: { type: mongoose.Schema.Types.Mixed } };
       schema.add(field);
     } else {
-      const field = { [item]: { type: mongoose.Schema.Types.Mixed } };
+      const field = { [collectionName]: { type: mongoose.Schema.Types.Mixed } };
       schema.add(field);
       schema.virtual("_" + collectionName, {
         ref: item,
@@ -54,45 +54,30 @@ function extend({
   return schema;
 }
 
-/*
-    right before a "find", prePopulateQuery:
-        this will add "populate" to the base query so it looks like this
-        populate("_dataSchema", "dataSchema")
-
-    after a find, we will get data that looks like this
-        {
-            _dataSchema: {data: {[myData]}}
-        }
-    normalizeResult will change to:
-        {
-            dataSchema: {[myData]}
-        }
-*/
-function prePopulateQuery(query) {
+async function normalizeFind(query, result) {
   let newModel = new query.model({});
-  for (let i = 0; i < newModel.metamodels.length; i++) {
-    let item = newModel.metamodels[i];
 
-    let collectionName = models[item].collection.collectionName;
+  let idArray = result.map((row) => row._id);
 
-    query.populate("_" + collectionName, item);
-  }
-}
+  for (let j = 0; j < newModel.metamodels.length; j++) {
+    let item = newModel.metamodels[j];
+    let schemaName = query.model && query.model.modelName;
 
-function normalizeResult(query, result) {
-  let newModel = new query.model({});
-  result.forEach((row) => {
-    newModel.metamodels.forEach((item) => {
-      let collectionName = models[item].collection.collectionName;
-
-      let metadata = row["_" + collectionName];
-
-      if (metadata) {
-        row[collectionName] = metadata[item];
-      }
-      delete row["_" + collectionName];
+    let model = models[item];
+    let results = await model.find({
+      origin: schemaName,
+      refId: { $in: idArray },
     });
-  });
+    let resultMap = {};
+    results.forEach((item) => (resultMap[item.refId] = item));
+
+    let collectionName = (options[item] && options[item].schemaName) || item;
+    result.forEach((row) => {
+      if (resultMap[row._id]) {
+        row[collectionName] = resultMap[row._id][item];
+      }
+    });
+  }
 }
 
 function modelFromQuery(query) {
@@ -127,19 +112,23 @@ async function archiveMeta(stateObject, { schema, query }) {
 
   stateObject["idArray"] = await idArrayFromQuery(query);
   metamodels.forEach((item) => {
+    let collectionName = (options[item] && options[item].schemaName) || item;
     if (!inlineWithObject) {
       // if not inline, store this somewhere so it doesn't get touched....
-      if (object[item]) {
+      console.log("about to handle ", item, collectionName)
+      if (object[collectionName]) {
         let data = {
-          [item]: object[item],
+          [item]: object[collectionName],
           origin: schemaName,
         };
 
         if (object._id) data.refId = object._id;
         stateObject["_" + item] = data;
 
-        object[item] = undefined;
-        delete object[item];
+        console.log("archived object", stateObject["_" + item]);
+
+        object[collectionName] = undefined;
+        delete object[collectionName];
       }
     }
   });
@@ -172,6 +161,34 @@ async function saveMeta(stateObject, { schema, query }) {
   }
 }
 
+async function addToPipeline(aggregate) {
+  let pipeline = aggregate.pipeline();
+  let model = new aggregate._model;
+  for (let j = 0; j < model.metamodels.length; j++) {
+    let item = model.metamodels[j];
+    let schemaName = model && model.modelName;
+    let collectionName = (options[item] && options[item].schemaName) || item;
+
+    pipeline.push({
+      "$lookup": {
+        from: item,
+        localField: "_id",
+        foreignField: "refId",
+        as: collectionName
+      }
+    })
+    pipeline.push({
+      "$unwind": `$${collectionName}`
+    })
+    pipeline.push({
+      "$addFields": {
+        [`${collectionName}`]: `$${collectionName}.${item}`
+      }
+    })
+  }
+  console.log("pipeline", pipeline)
+}
+
 function addSchemaHooks(schema) {
   async function preUpdate() {
     await archiveMeta(this, { query: this, schema });
@@ -200,20 +217,14 @@ function addSchemaHooks(schema) {
   schema.pre("updateMany", preUpdate);
   schema.post("updateMany", postUpdate);
 
-  schema.pre("find", async function preFind() {
-    prePopulateQuery(this);
-  });
-
   schema.post("find", async function postFind(result) {
-    normalizeResult(this, result);
+    await normalizeFind(this, result);
   });
-
-  schema.pre("findOne", async function preFindOne() {
-    prePopulateQuery(this);
-  });
-
   schema.post("findOne", async function postFindOne(result) {
-    normalizeResult(this, [result]);
+    await normalizeFind(this, [result]);
+  });
+  schema.pre("aggregate", async function preAggregate() {
+    await addToPipeline(this);
   });
 }
 

@@ -9,6 +9,7 @@ const connEnvVariables = {
 let databases = {};
 let models = {};
 let schemas = {};
+let options = {};
 
 const MODEL_DIR = "../../db/models/";
 let modelsDir = __dirname + "/" + MODEL_DIR;
@@ -55,15 +56,8 @@ function loadModels(mongoose, databaseOptions, dir = `${modelsDir}den`) {
 
     // schema names are lower case
     schemas[schemaName] = schema;
-
-    /* see if databaseOptions has a new name for schemaName */
-    let collectionName =
-      (databaseOptions &&
-        databaseOptions[schemaName] &&
-        databaseOptions[schemaName].schemaName) ||
-      schemaName;
-
-    models[schemaName] = mongoose.model(schemaName, schema, collectionName);
+    options[schemaName] = databaseOptions && databaseOptions[schemaName];
+    models[schemaName] = mongoose.model(schemaName, schema);
   });
 }
 
@@ -77,4 +71,4 @@ function init({ loadModels = true }) {
   }
 }
 
-module.exports = { init, loadModels, databases, schemas, models };
+module.exports = { init, loadModels, databases, schemas, models, options };
