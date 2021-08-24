@@ -2,7 +2,7 @@ require("dotenv").config();
 const Mongoose = require("mongoose").Mongoose; // to make diff instance of mongoose as we have to connect 2 db
 
 let mongoose = new Mongoose();
-mongoose.connect(process.env.MONGO_DB_DEN, {
+mongoose.connect(process.env.MONGO_DB_URL, {
     useNewUrlParser: true,
     useFindAndModify: false,
     useUnifiedTopology: true,
@@ -10,13 +10,18 @@ mongoose.connect(process.env.MONGO_DB_DEN, {
 
 let dataField = "metadata";
 
-const {init, extend} = require("../src");
+const {init, extendMetaData} = require("../src");
 
-init(mongoose, {data: {schemaName: dataField}});
+init(mongoose);
 
 let EmployeeSchema = require("../src/db/models/test/employee");
 
-EmployeeSchema = extend({name: "employee", schema: EmployeeSchema, metamodels: ["data", "tags"], inlineWithObject: false});
+const options = require("./employee-options");
+
+EmployeeSchema = extendMetaData({name: "employee", 
+                                 schema: EmployeeSchema, 
+                                 metamodels: ["tags", "data"], 
+                                 options: options});
 
 let EmployeeModel = mongoose.model("employee", EmployeeSchema);
 
@@ -38,9 +43,7 @@ async function getEmployeesAgg(firstName) {
     let johns = await EmployeeModel.aggregate([
         {$match: {firstName: firstName}}
     ]).allowDiskUse(true);
-    johns.forEach(item => {
-        console.log(item);
-    })
+    console.log("result", johns);
 }
 
 async function getOneByName(firstName) {
@@ -67,16 +70,17 @@ async function updateMany(firstName, john) {
 
 async function run() {
     let john;
-    //john = await create({firstName: "John", lastName: "Doe", foo: "bar", [dataField]: {ssn: '11111111', gender: 'm'}, tags: ["vip", "sales"]});
+    john = await create({employerId: "121212", firstName: "John", lastName: "Doe", foo: "bar", [dataField]: {ssn: '11111111', gender: 'm'}, tags: ["vip", "sales"]});
     //john = await getOneById(john._id);
+    //console.log("oneById", john)
     //john = await getOneByName("bob");
-    //console.log("one", john)
+    //console.log("oneByName", john)
     //john.firstName = "Bob";
-    //john[dataField].ssn = '444444';
+    //john[dataField].ssn = '3333333';
     //await updateById(john._id, john);
     //await updateMany('John', {firstName: 'bob', [dataField]: {ssn: '999999'}});
     //console.log("updated john", john) */
-    //await getEmployees("bob");
+    await getEmployees("John");
     await getEmployeesAgg("Bob");
     process.exit();
 }

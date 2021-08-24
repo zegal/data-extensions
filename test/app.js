@@ -13,13 +13,13 @@ const Mongoose = require("mongoose").Mongoose; // to make diff instance of mongo
 const {ObjectId} = require("mongodb");
 
 let mongoose = new Mongoose();
-mongoose.connect(process.env.MONGO_DB_DEN, {
+mongoose.connect(process.env.MONGO_DB_URL, {
     useNewUrlParser: true,
     useFindAndModify: false,
     useUnifiedTopology: true,
 });
 
-const {init, extend} = require("../src");
+const {init, extendMetaData} = require("../src");
 
 const app = express();
 
@@ -63,11 +63,16 @@ app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 
 app.use("/", router);
 
-init(mongoose, {data: {schemaName: "metadata"}}, router, {});
+init(mongoose, router);
 
 let EmployeeSchema = require("../src/db/models/test/employee");
 
-EmployeeSchema = extend({name: "employee", schema: EmployeeSchema, metamodels: ["data", "tags"], inlineWithObject: false});
+const options = require("./employee-options");
+EmployeeSchema = extendMetaData({name: "employee", 
+                                 schema: EmployeeSchema, 
+                                 metamodels: ["tags", "data"], 
+                                 options: options});
+
 
 let EmployeeModel = mongoose.model("employee", EmployeeSchema);
 

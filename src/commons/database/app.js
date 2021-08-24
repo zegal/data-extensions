@@ -3,13 +3,13 @@ const fs = require("fs");
 const { log } = require("../logger/app");
 
 const connEnvVariables = {
-  den: process.env.MONGO_DB_DEN,
+  data: process.env.MONGO_DB_DATA,
+  definitions: process.env.MONGO_DB_DEFINITIONS,
 };
 
 let databases = {};
 let models = {};
 let schemas = {};
-let options = {};
 
 const MODEL_DIR = "../../db/models/";
 let modelsDir = __dirname + "/" + MODEL_DIR;
@@ -47,7 +47,8 @@ function createConnection(key, uri) {
   return mongoose;
 }
 
-function loadModels(mongoose, databaseOptions, dir = `${modelsDir}den`) {
+function loadModels(mongoose, module = "data") {
+  let dir = `${modelsDir}${module}`;
   fs.readdirSync(dir).forEach(function (file) {
     let schemaName = file.split(".")[0];
 
@@ -56,7 +57,6 @@ function loadModels(mongoose, databaseOptions, dir = `${modelsDir}den`) {
 
     // schema names are lower case
     schemas[schemaName] = schema;
-    options[schemaName] = databaseOptions && databaseOptions[schemaName];
     models[schemaName] = mongoose.model(schemaName, schema);
   });
 }
@@ -71,4 +71,4 @@ function init({ loadModels = true }) {
   }
 }
 
-module.exports = { init, loadModels, databases, schemas, models, options };
+module.exports = { init, loadModels, databases, schemas, models };
