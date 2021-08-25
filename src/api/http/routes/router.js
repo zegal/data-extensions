@@ -39,14 +39,23 @@ function initRouter(_router, _routerOptions) {
 }
 
 async function getMeta(schemaName, id, key) {
-  return await models[key].findOne({
-    origin: schemaName,
-    refId: ObjectId(id),
-  });
+  return await models[key]
+    .findOne({
+      origin: schemaName,
+      refId: ObjectId(id),
+    })
+    .lean();
 }
 
 async function saveMeta(schemaName, id, key, body) {
-  return { schemaName, id, key, body };
+  return await models[key].findOneAndUpdate(
+    {
+      origin: schemaName,
+      refId: ObjectId(id),
+    },
+    { [key]: body },
+    { new: true }
+  );
 }
 
 function addSchema(schemaName, options) {
@@ -56,19 +65,39 @@ function addSchema(schemaName, options) {
   }
   for (const key in models) {
     if (router) {
-      console.log("setting up default metadata routes for", schemaName, key);
       router.get(`${schemaRoot}/:id/${key}`, async (req, res) => {
-        console.log("get", schemaName, key, req.params.id);
         let response = await getMeta(schemaName, req.params.id, key);
+
         res.send(response);
       });
+
+      /* Get data based with context.*/
+      router.get(
+        `${schemaRoot}/:id/${key}/:contextOrigin/:contextId`,
+        async (req, res) => {
+          let response = await getMeta(schemaName, req.params.id, key);
+
+          try {
+            let { decorate } = require(`../../../lib/${key}`);
+            response = await decorate(
+              response,
+              options,
+              req.params.contextOrigin,
+              req.params.contextId
+            );
+          } catch (err) {
+            //swallow exception to decorate
+          }
+          res.send(response);
+        }
+      );
+
       router.put(`${schemaRoot}/:id/${key}`, async (req, res) => {
         console.log("put", schemaName, key, req.params.id, req.body);
         let response = await saveMeta(schemaName, req.params.id, key, req.body);
         res.send(response);
       });
 
-      console.log("setting up specific routes");
       try {
         require(`./${key}Router`)(router, schemaRoot, options[key]);
       } catch (err) {

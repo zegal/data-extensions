@@ -59,10 +59,12 @@ async function normalizeFind(query, result) {
       let schemaName = query.model && query.model.modelName;
 
       let model = models[item];
-      let results = await model.find({
-        origin: schemaName,
-        refId: { $in: idArray },
-      });
+      let results = await model
+        .find({
+          origin: schemaName,
+          refId: { $in: idArray },
+        })
+        .lean();
       let resultMap = {};
       results.forEach((item) => (resultMap[item.refId] = item));
 
@@ -72,6 +74,13 @@ async function normalizeFind(query, result) {
           row[collectionName] = resultMap[row._id][item];
         }
       });
+
+      try {
+        const { decorateMultiple } = require(`./${item}`);
+        result = await decorateMultiple(result, options);
+      } catch (err) {
+        console.log("decorateMultiple for", item, err);
+      }
     }
   }
 }
@@ -134,9 +143,16 @@ async function saveMeta(stateObject, { schema, query }) {
   for (let i = 0; i < metamodels.length; i++) {
     let item = metamodels[i];
     if (!inlineWithObject) {
-      const meta = stateObject["_" + item];
+      let meta = stateObject["_" + item];
       if (meta) {
         const model = models[item];
+
+        try {
+          const { clean } = require(`./${item}`);
+          meta = await clean(meta, options);
+        } catch (err) {
+          console.log("clean for", item, err);
+        }
 
         if (stateObject["idArray"]) {
           await model.updateMany(

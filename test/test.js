@@ -43,7 +43,6 @@ async function getEmployeesAgg(firstName) {
     let johns = await EmployeeModel.aggregate([
         {$match: {firstName: firstName}}
     ]).allowDiskUse(true);
-    console.log("result", johns);
 }
 
 async function getOneByName(firstName) {

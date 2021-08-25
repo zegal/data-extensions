@@ -78,7 +78,6 @@ let EmployeeModel = mongoose.model("employee", EmployeeSchema);
 
 app.use("/employee/:id", async (req, res) => {
   let result = await EmployeeModel.findOne({_id: ObjectId(req.params.id)});
-  console.log("result", result);
   res.send(result);
 })
 
