@@ -66,20 +66,43 @@ async function updateMany(firstName, john) {
     return;
 }
 
+async function deleteOne(query) {
+    await EmployeeModel.deleteOne(query);
+    return;
+}
+
+async function deleteMany(query) {
+    await EmployeeModel.deleteMany(query);
+    return;
+}
+
+async function findOneAndDelete(query) {
+    return await EmployeeModel.findOneAndDelete(query);
+}
+
+async function findOneAndUpdate(query, data) {
+    return await EmployeeModel.findOneAndUpdate(query, data);
+}
 
 async function run() {
     let john;
     john = await create({employerId: "121212", firstName: "John", lastName: "Doe", foo: "bar", [dataField]: {ssn: '11111111', gender: 'm'}, tags: ["vip", "sales"]});
-    //john = await getOneById(john._id);
+    john = await getOneById(john._id);
+
+    console.log("got john", john)
+    //await deleteOne({_id: john._id});
+    //await findOneAndDelete({_id: john._id});
+    //await deleteMany({firstName: "John"});
+    //console.log("deleted john", john)
     //console.log("oneById", john)
     //john = await getOneByName("bob");
     //console.log("oneByName", john)
-    //john.firstName = "Bob";
-    //john[dataField].ssn = '3333333';
-    //await updateById(john._id, john);
+    john.firstName = "Bob";
+    john[dataField].ssn = '3333333';
+    await findOneAndUpdate({_id: john._id}, john);
     //await updateMany('John', {firstName: 'bob', [dataField]: {ssn: '999999'}});
     //console.log("updated john", john) */
-    await getEmployees("John");
+    //await getEmployees("John");
     await getEmployeesAgg("Bob");
     process.exit();
 }

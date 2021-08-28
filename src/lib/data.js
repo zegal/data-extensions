@@ -4,7 +4,6 @@ const { flatten } = require("flattenjs");
 async function decorateMultiple(objects, { data }, contextOrigin, contextId) {
   let contextIdMap = {};
   if (!contextOrigin) {
-    console.log("no contextOrigin", data);
     contextOrigin = data.derivedDefinition.origin;
     // collect all contextIds....
     objects.forEach((item) => {
@@ -30,7 +29,6 @@ async function decorateMultiple(objects, { data }, contextOrigin, contextId) {
       contextIdMap[item] = custom;
     })
   );
-  console.log("contextIdMap", contextIdMap);
 
   if (base && base.fields) {
     objects.forEach((item) => {
@@ -44,7 +42,6 @@ async function decorateMultiple(objects, { data }, contextOrigin, contextId) {
         item[data.schemaName || "data"],
         allFields
       );
-      console.log("item", item);
     });
   }
   return objects;

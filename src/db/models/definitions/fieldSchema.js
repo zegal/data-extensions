@@ -8,7 +8,7 @@ const Field = mongoose.Schema(
     config: { type: mongoose.Schema.Types.Mixed },
     order: { type: mongoose.Schema.Types.String },
   },
-  { timestamps: true }
+  { timestamps: true, strict: false }
 );
 
 module.exports = Field;

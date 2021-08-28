@@ -79,7 +79,7 @@ async function normalizeFind(query, result) {
         const { decorateMultiple } = require(`./${item}`);
         result = await decorateMultiple(result, options);
       } catch (err) {
-        console.log("decorateMultiple for", item, err);
+        //console.log("decorateMultiple for", item, err);
       }
     }
   }
@@ -151,7 +151,7 @@ async function saveMeta(stateObject, { schema, query }) {
           const { clean } = require(`./${item}`);
           meta = await clean(meta, options);
         } catch (err) {
-          console.log("clean for", item, err);
+          //console.log("clean for", item, err);
         }
 
         if (stateObject["idArray"]) {
@@ -168,6 +168,26 @@ async function saveMeta(stateObject, { schema, query }) {
           );
         }
       }
+    }
+  }
+}
+
+async function deleteMeta(stateObject, { schema, query }) {
+  let { options, metamodels } = query ? modelFromQuery(query) : schema;
+  let { inlineWithObject } = options;
+  let schemaName =
+    (schema && schema.schemaName) ||
+    (query && query.model && query.model.modelName);
+
+  for (let i = 0; i < metamodels.length; i++) {
+    let item = metamodels[i];
+    if (!inlineWithObject) {
+        if (stateObject["idArray"]) {
+          const model = models[item];
+          await model.deleteMany(
+            { origin: schemaName, refId: { $in: stateObject["idArray"] } }
+          );
+        } 
     }
   }
 }
@@ -201,6 +221,10 @@ async function addToPipeline(aggregate) {
 }
 
 function addSchemaHooks(schema) {
+  async function preDelete() {
+    this["idArray"] = await idArrayFromQuery(this);
+  }
+
   async function preUpdate() {
     await archiveMeta(this, { query: this, schema });
   }
@@ -208,6 +232,12 @@ function addSchemaHooks(schema) {
   async function postUpdate() {
     await saveMeta(this, { query: this, schema });
   }
+
+  async function postDelete(a, b) {
+    console.log("a", a, "b", b);
+    await deleteMeta(this, { query: this, schema });
+  }
+
 
   schema.pre("validate", async function preValidate() {
     await archiveMeta(this, { schema: this });
@@ -227,6 +257,20 @@ function addSchemaHooks(schema) {
   schema.post("updateOne", postUpdate);
   schema.pre("updateMany", preUpdate);
   schema.post("updateMany", postUpdate);
+
+  schema.pre("deleteOne", preDelete);
+  schema.post("deleteOne", postDelete);
+  schema.pre("deleteMany", preDelete);
+  schema.post("deleteMany", postDelete);
+
+  schema.pre("findOneAndUpdate", preUpdate);
+  schema.post("findOneAndUpdate", postUpdate);
+
+  schema.pre("findOneAndDelete", preDelete);
+  schema.post("findOneAndDelete", postDelete);
+
+  schema.pre("findOneAndRemove", preDelete);
+  schema.post("findOneAndRemove", postDelete);
 
   schema.post("find", async function postFind(result) {
     await normalizeFind(this, result);
