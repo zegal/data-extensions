@@ -64,16 +64,26 @@ function addSchema(schemaName, options) {
     schemaRoot = routerOptions.root + "/" + schemaName;
   }
   for (const key in models) {
+    // see if key is overridden;
+    let keyPath = (options[key] && options[key].schemaName) || key;
+
     if (router) {
-      router.get(`${schemaRoot}/:id/${key}`, async (req, res) => {
+      router.get(`${schemaRoot}/:id/${keyPath}`, async (req, res) => {
         let response = await getMeta(schemaName, req.params.id, key);
+
+        try {
+          let { decorate } = require(`../../../lib/${key}`);
+          response = await decorate(response, options);
+        } catch (err) {
+          //swallow exception to decorate
+        }
 
         res.send(response);
       });
 
       /* Get data based with context.*/
       router.get(
-        `${schemaRoot}/:id/${key}/:contextOrigin/:contextId`,
+        `${schemaRoot}/:id/${keyPath}/:contextOrigin/:contextId`,
         async (req, res) => {
           let response = await getMeta(schemaName, req.params.id, key);
 

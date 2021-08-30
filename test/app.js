@@ -81,6 +81,17 @@ app.use("/employee/:id", async (req, res) => {
   res.send(result);
 })
 
+router.put("/employee/search", async (req, res) => {
+  console.log("search", req.body);
+  EmployeeModel.metasearch = "Bob"
+  if(req.body) {
+    let result = await EmployeeModel.find(req.body);
+    res.send(result);
+  } else {
+    res.send({});
+  }
+})
+
 
 app.listen(process.env.APIPORT, () => {
   log.info(`Server started on ${process.env.APIPORT}`);

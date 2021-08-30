@@ -38,11 +38,22 @@ async function getEmployees(firstName) {
     })
 }
 
+async function find(query) {
+    let johns = await EmployeeModel.find(query).lean();
+    johns.forEach(item => {
+        console.log(item);
+    })
+}
+
 async function getEmployeesAgg(firstName) {
-    console.log("getEmployeesAgg", firstName)
     let johns = await EmployeeModel.aggregate([
         {$match: {firstName: firstName}}
     ]).allowDiskUse(true);
+}
+
+async function aggregate(pipeline) {
+    let emps = await EmployeeModel.aggregate(pipeline).allowDiskUse(true);
+    return emps;
 }
 
 async function getOneByName(firstName) {
@@ -86,10 +97,10 @@ async function findOneAndUpdate(query, data) {
 
 async function run() {
     let john;
-    john = await create({employerId: "121212", firstName: "John", lastName: "Doe", foo: "bar", [dataField]: {ssn: '11111111', gender: 'm'}, tags: ["vip", "sales"]});
-    john = await getOneById(john._id);
+    //john = await create({employerId: "121212", firstName: "John", lastName: "Doe", foo: "bar", [dataField]: {ssn: '11111111', gender: 'm'}, tags: ["vip", "sales"]});
+    //john = await getOneById(john._id);
 
-    console.log("got john", john)
+    //console.log("got john", john)
     //await deleteOne({_id: john._id});
     //await findOneAndDelete({_id: john._id});
     //await deleteMany({firstName: "John"});
@@ -97,13 +108,18 @@ async function run() {
     //console.log("oneById", john)
     //john = await getOneByName("bob");
     //console.log("oneByName", john)
-    john.firstName = "Bob";
-    john[dataField].ssn = '3333333';
-    await findOneAndUpdate({_id: john._id}, john);
+    //john.firstName = "Bob";
+    //john[dataField].ssn = '3333333';
+    //await findOneAndUpdate({_id: john._id}, john);
     //await updateMany('John', {firstName: 'bob', [dataField]: {ssn: '999999'}});
     //console.log("updated john", john) */
     //await getEmployees("John");
-    await getEmployeesAgg("Bob");
+    //await getEmployeesAgg("Bob");
+    // await find({firstName: "Bob", tags: "vip", "metadata.contract.date": {"$gte": "2021-08-01"}});
+    console.log("emps", await aggregate([
+        {$match: {firstName: "Bob", 
+                  tags: "vip"}}
+        ]));
     process.exit();
 }
 

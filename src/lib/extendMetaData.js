@@ -46,29 +46,40 @@ function extendMetaData({ name, schema, metamodels, options }) {
   return schema;
 }
 
+
 async function normalizeFind(query, result) {
   let newModel = new query.model({});
   let { options } = newModel;
 
   let idArray = [];
 
+  const metasearchConditions = {};
+
   if (result && result[0]) {
     idArray = result.map((row) => row && row._id);
     for (let j = 0; j < newModel.metamodels.length; j++) {
       let item = newModel.metamodels[j];
       let schemaName = query.model && query.model.modelName;
+      let collectionName = (options[item] && options[item].schemaName) || item;
 
       let model = models[item];
+
+      let metasearch = query["_" + collectionName]
+
+      if(Object.keys(metasearch).length >= 1) {
+        metasearchConditions[collectionName] = true;
+      }
+
       let results = await model
         .find({
           origin: schemaName,
           refId: { $in: idArray },
+          ...metasearch
         })
         .lean();
       let resultMap = {};
       results.forEach((item) => (resultMap[item.refId] = item));
 
-      let collectionName = (options[item] && options[item].schemaName) || item;
       result.forEach((row) => {
         if (resultMap[row._id]) {
           row[collectionName] = resultMap[row._id][item];
@@ -81,8 +92,22 @@ async function normalizeFind(query, result) {
       } catch (err) {
         //console.log("decorateMultiple for", item, err);
       }
+
+    }
+
+    // now loop through results and prune ones that don't match metasearchConditions
+    for(var i = result.length - 1; i >= 0; i--) {
+      let row = result[i];
+      let toDelete = false;
+      for(var key in metasearchConditions) {
+        if(!row[key]) toDelete = true;
+      }
+      if(toDelete) {
+        result.splice(i, 1);
+      }
     }
   }
+
 }
 
 function modelFromQuery(query) {
@@ -147,13 +172,6 @@ async function saveMeta(stateObject, { schema, query }) {
       if (meta) {
         const model = models[item];
 
-        try {
-          const { clean } = require(`./${item}`);
-          meta = await clean(meta, options);
-        } catch (err) {
-          //console.log("clean for", item, err);
-        }
-
         if (stateObject["idArray"]) {
           await model.updateMany(
             { origin: meta.origin, refId: { $in: stateObject["idArray"] } },
@@ -182,12 +200,31 @@ async function deleteMeta(stateObject, { schema, query }) {
   for (let i = 0; i < metamodels.length; i++) {
     let item = metamodels[i];
     if (!inlineWithObject) {
-        if (stateObject["idArray"]) {
-          const model = models[item];
-          await model.deleteMany(
-            { origin: schemaName, refId: { $in: stateObject["idArray"] } }
-          );
-        } 
+      if (stateObject["idArray"]) {
+        const model = models[item];
+        await model.deleteMany({
+          origin: schemaName,
+          refId: { $in: stateObject["idArray"] },
+        });
+      }
+    }
+  }
+}
+
+function preprocessFind(_query) {
+  let { options, metamodels } = modelFromQuery(_query);
+  query = _query.getQuery();
+  for (let j = 0; j < metamodels.length; j++) {
+    let item = metamodels[j];
+    let collectionName = (options[item] && options[item].schemaName) || item;
+    let metaquery = {};
+    _query["_" + collectionName] = metaquery;
+    for(var key in query) {
+      if(key.indexOf(collectionName) >= 0) {
+        let normalizedKey = key.replace(collectionName, item);
+        _query["_" + collectionName][normalizedKey] = query[key];
+        delete query[key];
+      }
     }
   }
 }
@@ -196,6 +233,31 @@ async function addToPipeline(aggregate) {
   let pipeline = aggregate.pipeline();
   let model = new aggregate._model();
   let { options, metamodels } = model;
+
+  let metasearch = [];
+
+  // first prune pipeline of metadata specific match constraints
+  for (let i = pipeline.length - 1; i >= 0; i--) {
+    let entry = pipeline[i];
+    if(entry["$match"]) { // now we want to mess with the $match entries
+      let match = entry["$match"];
+      for(let j = 0; j < metamodels.length; j++) {
+        let item = metamodels[j];
+        let collectionName = (options[item] && options[item].schemaName) || item;
+        for(var key in match) {
+          if(key.indexOf(collectionName) >= 0) {
+            let normalizedKey = key.replace(collectionName, item);
+            metasearch.push({[key]: match[key]});
+            delete match[key];
+          }
+        }
+      }
+      // if no keys in match, just delete the match entry
+      if(Object.keys(match) == 0) {
+        pipeline.splice(i, 1);
+      }
+    }
+  }
 
   for (let j = 0; j < metamodels.length; j++) {
     let item = metamodels[j];
@@ -218,6 +280,13 @@ async function addToPipeline(aggregate) {
       },
     });
   }
+
+  // add back those constraints
+  metasearch.forEach(item => {
+    pipeline.push({"$match": item});
+  })
+  console.log("final pipeline", pipeline);
+
 }
 
 function addSchemaHooks(schema) {
@@ -233,11 +302,9 @@ function addSchemaHooks(schema) {
     await saveMeta(this, { query: this, schema });
   }
 
-  async function postDelete(a, b) {
-    console.log("a", a, "b", b);
+  async function postDelete() {
     await deleteMeta(this, { query: this, schema });
   }
-
 
   schema.pre("validate", async function preValidate() {
     await archiveMeta(this, { schema: this });
@@ -271,6 +338,10 @@ function addSchemaHooks(schema) {
 
   schema.pre("findOneAndRemove", preDelete);
   schema.post("findOneAndRemove", postDelete);
+
+  schema.pre("find", async function preFind() {
+    await preprocessFind(this);
+  });
 
   schema.post("find", async function postFind(result) {
     await normalizeFind(this, result);

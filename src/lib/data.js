@@ -35,11 +35,13 @@ async function decorateMultiple(objects, { data }, contextOrigin, contextId) {
       const allFields = base.fields.concat(
         (contextIdMap[item[data.derivedDefinition.refId]] &&
           contextIdMap[item[data.derivedDefinition.refId]].fields) ||
+          (contextIdMap[contextId] && contextIdMap[contextId].fields) ||
           []
       );
+
       let metadata = item[data.schemaName] || item.data;
       metadata.flattened = flattenData(
-        item[data.schemaName || "data"],
+        item[data.schemaName] || item["data"],
         allFields
       );
     });
@@ -53,23 +55,27 @@ async function decorate(object, { data }, contextOrigin, contextId) {
   )[0];
 }
 
-async function clean(object, { data }) {
-  delete object[data.schemaName || "data"].flattened;
-  object[data.schemaName || "data"].flattened = null;
-  return;
-}
-
 function flattenData(data, fields) {
   let flattenedData = [];
   let flattened = flatten(data);
   fields.forEach((fd) => {
     let value = flattened[fd.id];
+    delete flattened[fd.id];
     flattenedData.push({
       label: fd.name || fd.question,
       value: value,
       id: fd.id,
     });
   });
+
+  // now for the leftovers.....
+  for (const key in flattened) {
+    flattenedData.push({
+      label: key,
+      value: flattened[key],
+      id: key,
+    });
+  }
   return flattenedData;
 }
 
@@ -82,7 +88,7 @@ async function getFieldDefinition(baseDefinition, contextOrigin, contextId) {
       models["fieldDefinitions"].findOne({ code: code }),
   ]);
 
-  if (!custom) {
+  if (!custom && contextOrigin && contextId) {
     custom = await models["fieldDefinitions"].create({
       name: code,
       code: code,
@@ -109,7 +115,6 @@ async function saveFieldDefinition(
     contextId
   );
 
-  console.log("updating...", data);
   custom = await models["fieldDefinitions"].findOneAndUpdate(
     { _id: custom._id },
     { fields: data.fields, name: data.name },
@@ -127,5 +132,4 @@ module.exports = {
   saveFieldDefinition,
   decorateMultiple,
   decorate,
-  clean,
 };
