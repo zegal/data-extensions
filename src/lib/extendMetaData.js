@@ -279,8 +279,6 @@ async function addToPipeline(aggregate) {
   metasearch.forEach(item => {
     pipeline.push({"$match": item});
   })
-  console.log("final pipeline", pipeline);
-
 }
 
 function addSchemaHooks(schema) {
