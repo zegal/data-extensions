@@ -66,7 +66,7 @@ async function normalizeFind(query, result) {
 
       let metasearch = query["_" + collectionName]
 
-      if(Object.keys(metasearch).length >= 1) {
+      if(metasearch && Object.keys(metasearch).length >= 1) {
         metasearchConditions[collectionName] = true;
       }
 
@@ -133,12 +133,9 @@ async function idArrayFromQuery(query) {
 }
 
 async function archiveMeta(stateObject, { schema, query }) {
-  let { metamodels, options } = query ? modelFromQuery(query) : schema;
+  let { metamodels, options, schemaName } = query ? modelFromQuery(query) : schema;
   let { inlineWithObject } = options;
 
-  let schemaName =
-    (schema && schema.schemaName) ||
-    (query && query.model && query.model.modelName);
   let object = objectFromQuery(query) || schema;
 
   stateObject["idArray"] = await idArrayFromQuery(query);
@@ -191,11 +188,8 @@ async function saveMeta(stateObject, { schema, query }) {
 }
 
 async function deleteMeta(stateObject, { schema, query }) {
-  let { options, metamodels } = query ? modelFromQuery(query) : schema;
+  let { options, metamodels, schemaName } = query ? modelFromQuery(query) : schema;
   let { inlineWithObject } = options;
-  let schemaName =
-    (schema && schema.schemaName) ||
-    (query && query.model && query.model.modelName);
 
   for (let i = 0; i < metamodels.length; i++) {
     let item = metamodels[i];
