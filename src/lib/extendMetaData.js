@@ -46,7 +46,6 @@ function extendMetaData({ name, schema, metamodels, options }) {
   return schema;
 }
 
-
 async function normalizeFind(query, result) {
   let newModel = new query.model({});
   let { options } = newModel;
@@ -64,9 +63,9 @@ async function normalizeFind(query, result) {
 
       let model = models[item];
 
-      let metasearch = query["_" + collectionName]
+      let metasearch = query["_" + collectionName];
 
-      if(metasearch && Object.keys(metasearch).length >= 1) {
+      if (metasearch && Object.keys(metasearch).length >= 1) {
         metasearchConditions[collectionName] = true;
       }
 
@@ -74,7 +73,7 @@ async function normalizeFind(query, result) {
         .find({
           origin: schemaName,
           refId: { $in: idArray },
-          ...metasearch
+          ...metasearch,
         })
         .lean();
       let resultMap = {};
@@ -92,22 +91,20 @@ async function normalizeFind(query, result) {
       } catch (err) {
         //console.log("decorateMultiple for", item, err);
       }
-
     }
 
     // now loop through results and prune ones that don't match metasearchConditions
-    for(var i = result.length - 1; i >= 0; i--) {
+    for (let i = result.length - 1; i >= 0; i--) {
       let row = result[i];
       let toDelete = false;
-      for(var key in metasearchConditions) {
-        if(!row[key]) toDelete = true;
+      for (let key in metasearchConditions) {
+        if (!row[key]) toDelete = true;
       }
-      if(toDelete) {
+      if (toDelete) {
         result.splice(i, 1);
       }
     }
   }
-
 }
 
 function modelFromQuery(query) {
@@ -133,7 +130,9 @@ async function idArrayFromQuery(query) {
 }
 
 async function archiveMeta(stateObject, { schema, query }) {
-  let { metamodels, options, schemaName } = query ? modelFromQuery(query) : schema;
+  let { metamodels, options, schemaName } = query
+    ? modelFromQuery(query)
+    : schema;
   let { inlineWithObject } = options;
 
   let object = objectFromQuery(query) || schema;
@@ -188,7 +187,9 @@ async function saveMeta(stateObject, { schema, query }) {
 }
 
 async function deleteMeta(stateObject, { schema, query }) {
-  let { options, metamodels, schemaName } = query ? modelFromQuery(query) : schema;
+  let { options, metamodels, schemaName } = query
+    ? modelFromQuery(query)
+    : schema;
   let { inlineWithObject } = options;
 
   for (let i = 0; i < metamodels.length; i++) {
@@ -207,14 +208,14 @@ async function deleteMeta(stateObject, { schema, query }) {
 
 function preprocessFind(_query) {
   let { options, metamodels } = modelFromQuery(_query);
-  query = _query.getQuery();
+  let query = _query.getQuery();
   for (let j = 0; j < metamodels.length; j++) {
     let item = metamodels[j];
     let collectionName = (options[item] && options[item].schemaName) || item;
     let metaquery = {};
     _query["_" + collectionName] = metaquery;
-    for(var key in query) {
-      if(key.indexOf(collectionName) >= 0) {
+    for (let key in query) {
+      if (key.indexOf(collectionName) >= 0) {
         let normalizedKey = key.replace(collectionName, item);
         _query["_" + collectionName][normalizedKey] = query[key];
         delete query[key];
@@ -233,21 +234,23 @@ async function addToPipeline(aggregate) {
   // first prune pipeline of metadata specific match constraints
   for (let i = pipeline.length - 1; i >= 0; i--) {
     let entry = pipeline[i];
-    if(entry["$match"]) { // now we want to mess with the $match entries
+    if (entry["$match"]) {
+      // now we want to mess with the $match entries
       let match = entry["$match"];
-      for(let j = 0; j < metamodels.length; j++) {
+      for (let j = 0; j < metamodels.length; j++) {
         let item = metamodels[j];
-        let collectionName = (options[item] && options[item].schemaName) || item;
-        for(var key in match) {
-          if(key.indexOf(collectionName) >= 0) {
+        let collectionName =
+          (options[item] && options[item].schemaName) || item;
+        for (let key in match) {
+          if (key.indexOf(collectionName) >= 0) {
             let normalizedKey = key.replace(collectionName, item);
-            metasearch.push({[key]: match[key]});
+            metasearch.push({ [normalizedKey]: match[key] });
             delete match[key];
           }
         }
       }
       // if no keys in match, just delete the match entry
-      if(Object.keys(match) == 0) {
+      if (Object.keys(match) == 0) {
         pipeline.splice(i, 1);
       }
     }
@@ -276,9 +279,9 @@ async function addToPipeline(aggregate) {
   }
 
   // add back those constraints
-  metasearch.forEach(item => {
-    pipeline.push({"$match": item});
-  })
+  metasearch.forEach((item) => {
+    pipeline.push({ $match: item });
+  });
 }
 
 function addSchemaHooks(schema) {

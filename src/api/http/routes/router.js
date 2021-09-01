@@ -68,22 +68,27 @@ function addSchema(schemaName, options) {
     let keyPath = (options[key] && options[key].schemaName) || key;
 
     if (router) {
-      router.get(`${schemaRoot}/:id/${keyPath}`, async (req, res) => {
-        let response = await getMeta(schemaName, req.params.id, key);
+      router.get(
+        `${schemaRoot}/:id/${keyPath}`,
+        (routerOptions && routerOptions.middleware) || [],
+        async (req, res) => {
+          let response = await getMeta(schemaName, req.params.id, key);
 
-        try {
-          let { decorate } = require(`../../../lib/${key}`);
-          response = await decorate(response, options);
-        } catch (err) {
-          //swallow exception to decorate
+          try {
+            let { decorate } = require(`../../../lib/${key}`);
+            response = await decorate(response, options);
+          } catch (err) {
+            //swallow exception to decorate
+          }
+
+          res.send(response);
         }
-
-        res.send(response);
-      });
+      );
 
       /* Get data based with context.*/
       router.get(
         `${schemaRoot}/:id/${keyPath}/:contextOrigin/:contextId`,
+        (routerOptions && routerOptions.middleware) || [],
         async (req, res) => {
           let response = await getMeta(schemaName, req.params.id, key);
 
@@ -102,14 +107,28 @@ function addSchema(schemaName, options) {
         }
       );
 
-      router.put(`${schemaRoot}/:id/${keyPath}`, async (req, res) => {
-        console.log("put", schemaName, key, req.params.id, req.body);
-        let response = await saveMeta(schemaName, req.params.id, key, req.body);
-        res.send(response);
-      });
+      router.put(
+        `${schemaRoot}/:id/${keyPath}`,
+        (routerOptions && routerOptions.middleware) || [],
+        async (req, res) => {
+          console.log("put", schemaName, key, req.params.id, req.body);
+          let response = await saveMeta(
+            schemaName,
+            req.params.id,
+            key,
+            req.body
+          );
+          res.send(response);
+        }
+      );
 
       try {
-        require(`./${key}Router`)(router, schemaRoot, options[key]);
+        require(`./${key}Router`)(
+          router,
+          schemaRoot,
+          routerOptions,
+          options[key]
+        );
       } catch (err) {
         console.log("no special routes found for", key);
       }

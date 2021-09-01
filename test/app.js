@@ -6,7 +6,7 @@ const path = require("path");
 
 const cors = require("cors");
 
-const { log } = require("../src/commons/logger/app");
+const logger  = require("../src/commons/logger/app");
 
 const Mongoose = require("mongoose").Mongoose; // to make diff instance of mongoose as we have to connect 2 db
 
@@ -63,7 +63,7 @@ app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 
 app.use("/", router);
 
-init(mongoose, router);
+init(mongoose, router, {middleware: [(res, req, next) => {console.log("caught"); next();}]});
 
 let EmployeeSchema = require("../src/db/models/test/employee");
 
@@ -94,5 +94,5 @@ router.put("/employee/search", async (req, res) => {
 
 
 app.listen(process.env.APIPORT, () => {
-  log.info(`Server started on ${process.env.APIPORT}`);
+  logger.info(`Server started on ${process.env.APIPORT}`);
 });

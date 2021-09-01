@@ -2,10 +2,11 @@ const {
   getFieldDefinition,
   saveFieldDefinition,
 } = require("../../../lib/data");
-module.exports = (router, schemaRoot, options) => {
+module.exports = (router, schemaRoot, routerOptions, options) => {
   /* Get fieldDefinition based on a baseDefinition and a parent context; create one if does not exist.*/
   router.get(
     `${schemaRoot}/fieldDefinitions/:contextOrigin/:contextId`,
+    (routerOptions && routerOptions.middleware) || [],
     async (req, res) => {
       let allDefn = await getFieldDefinition(
         options.baseDefinition,
@@ -19,6 +20,7 @@ module.exports = (router, schemaRoot, options) => {
   /* Store fieldDefinition base on a base definition and a parent context*/
   router.put(
     `${schemaRoot}/fieldDefinitions/:contextOrigin/:contextId`,
+    (routerOptions && routerOptions.middleware) || [],
     async (req, res) => {
       let allDefn = await saveFieldDefinition(
         options.baseDefinition,
