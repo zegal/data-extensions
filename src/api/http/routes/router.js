@@ -54,7 +54,7 @@ async function saveMeta(schemaName, id, key, body) {
       refId: ObjectId(id),
     },
     { [key]: body },
-    { new: true }
+    { new: true, upsert: true }
   );
 }
 
@@ -102,7 +102,7 @@ function addSchema(schemaName, options) {
         }
       );
 
-      router.put(`${schemaRoot}/:id/${key}`, async (req, res) => {
+      router.put(`${schemaRoot}/:id/${keyPath}`, async (req, res) => {
         console.log("put", schemaName, key, req.params.id, req.body);
         let response = await saveMeta(schemaName, req.params.id, key, req.body);
         res.send(response);
