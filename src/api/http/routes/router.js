@@ -61,9 +61,9 @@ async function saveMeta(schemaName, id, key, body) {
 function addSchema(schemaName, options) {
   let schemaRoot = "/" + schemaName;
   if (options && options.root) {
-    schemaRoot = "/" + options.root;
+    schemaRoot = options.root;
   }
-  
+
   for (const key in models) {
     // see if key is overridden;
     let keyPath = (options[key] && options[key].schemaName) || key;
@@ -136,7 +136,7 @@ function addSchema(schemaName, options) {
     }
   }
   if (router) {
-    router.put(`${routerOptions && routerOptions.root}/searchMeta`, (req) => {
+    router.put(`${schemaRoot}/searchMeta`, (req) => {
       console.log("put searchMeta", schemaName, req.body);
     });
   }
