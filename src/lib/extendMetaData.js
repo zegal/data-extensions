@@ -48,7 +48,7 @@ function extendMetaData({ name, schema, metamodels, options }) {
 
 async function normalizeFind(query, result) {
   let newModel = new query.model({});
-  let { options } = newModel;
+  let { options, schemaName } = newModel;
 
   let idArray = [];
 
@@ -58,7 +58,7 @@ async function normalizeFind(query, result) {
     idArray = result.map((row) => row && row._id);
     for (let j = 0; j < newModel.metamodels.length; j++) {
       let item = newModel.metamodels[j];
-      let schemaName = query.model && query.model.modelName;
+
       let collectionName = (options[item] && options[item].schemaName) || item;
 
       let model = models[item];
