@@ -60,9 +60,10 @@ async function saveMeta(schemaName, id, key, body) {
 
 function addSchema(schemaName, options) {
   let schemaRoot = "/" + schemaName;
-  if (routerOptions && routerOptions.root) {
-    schemaRoot = routerOptions.root + "/" + schemaName;
+  if (options && options.root) {
+    schemaRoot = "/" + options.root;
   }
+  
   for (const key in models) {
     // see if key is overridden;
     let keyPath = (options[key] && options[key].schemaName) || key;
