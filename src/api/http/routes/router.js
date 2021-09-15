@@ -117,7 +117,7 @@ function addSchema(schemaName, options) {
             schemaName,
             req.params.id,
             key,
-            req.body
+            req.body[keyPath]
           );
           res.send(response);
         }
