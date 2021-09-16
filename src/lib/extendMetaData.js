@@ -243,8 +243,7 @@ async function addToPipeline(aggregate) {
           (options[item] && options[item].schemaName) || item;
         for (let key in match) {
           if (key.indexOf(collectionName) >= 0) {
-            let normalizedKey = key.replace(collectionName, item);
-            metasearch.push({ [normalizedKey]: match[key] });
+            metasearch.push({ [key]: match[key] });
             delete match[key];
           }
         }
