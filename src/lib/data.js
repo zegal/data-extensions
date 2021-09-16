@@ -1,13 +1,13 @@
 const { models } = require("../commons/database/app");
 const { flatten } = require("flattenjs");
 
-async function decorateMultiple(objects, { data }, contextOrigin, contextId) {
+async function decorateMultiple(objects, { metadata }, contextOrigin, contextId) {
   let contextIdMap = {};
   if (!contextOrigin) {
-    contextOrigin = data.derivedDefinition.origin;
+    contextOrigin = metadata.derivedDefinition.origin;
     // collect all contextIds....
     objects.forEach((item) => {
-      contextIdMap[item[data.derivedDefinition.refId]] = {};
+      contextIdMap[item[metadata.derivedDefinition.refId]] = {};
     });
   } else {
     contextIdMap[contextId] = {};
@@ -18,11 +18,11 @@ async function decorateMultiple(objects, { data }, contextOrigin, contextId) {
     contextIdArray.push(key);
   }
 
-  const { base } = await getFieldDefinition(data.baseDefinition);
+  const { base } = await getFieldDefinition(metadata.baseDefinition);
   await Promise.all(
     contextIdArray.map(async (item) => {
       const { custom } = await getFieldDefinition(
-        data.baseDefinition,
+        metadata.baseDefinition,
         contextOrigin,
         item
       );
@@ -33,25 +33,25 @@ async function decorateMultiple(objects, { data }, contextOrigin, contextId) {
   if (base && base.fields) {
     objects.forEach((item) => {
       const allFields = base.fields.concat(
-        (contextIdMap[item[data.derivedDefinition.refId]] &&
-          contextIdMap[item[data.derivedDefinition.refId]].fields) ||
+        (contextIdMap[item[metadata.derivedDefinition.refId]] &&
+          contextIdMap[item[metadata.derivedDefinition.refId]].fields) ||
           (contextIdMap[contextId] && contextIdMap[contextId].fields) ||
           []
       );
 
-      let metadata = item[data.schemaName] || item.data;
-      metadata.flattened = flattenData(
-        item[data.schemaName] || item["data"],
-        allFields
-      );
+      // let metadata = item[data.schemaName] || item.data;
+      // metadata.flattened = flattenData(
+      //   item[data.schemaName] || item["data"],
+      //   allFields
+      // );
     });
   }
   return objects;
 }
 
-async function decorate(object, { data }, contextOrigin, contextId) {
+async function decorate(object, { metadata }, contextOrigin, contextId) {
   return (
-    await decorateMultiple([object], { data }, contextOrigin, contextId)
+    await decorateMultiple([object], { metadata }, contextOrigin, contextId)
   )[0];
 }
 
