@@ -1,7 +1,7 @@
 const {
   getFieldDefinition,
   saveFieldDefinition,
-} = require("../../../lib/data");
+} = require("../../../lib/metadata");
 module.exports = (router, schemaRoot, routerOptions, options) => {
   /* Get fieldDefinition based on a baseDefinition and a parent context; create one if does not exist.*/
   router.get(
