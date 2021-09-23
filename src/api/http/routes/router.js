@@ -119,6 +119,14 @@ function addSchema(schemaName, options) {
             key,
             req.body
           );
+          if(routerOptions.eventEmitter && options.eventName){
+            routerOptions.eventEmitter.emit( options.eventName, {
+              id:   req.params.id,
+              schemaRoot,
+              keyPath,
+              schemaName        
+            });
+          }
           res.send(response);
         }
       );
