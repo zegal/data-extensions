@@ -124,7 +124,9 @@ function addSchema(schemaName, options) {
               id:   req.params.id,
               schemaRoot,
               keyPath,
-              schemaName        
+              schemaName,
+              headers: req.headers,
+              response        
             });
           }
           res.send(response);
