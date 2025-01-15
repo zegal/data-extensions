@@ -1,10 +1,19 @@
+const EmployeeSchema = require("../src/db/models/test/employee");
+
+// used by test.js only
 module.exports = {
-    inlineWithObject: false, 
-    data: { schemaName: "metadata",
-            baseDefinition: "contract-meta",
-            derivedDefinition: {
-                origin: "employer",
-                refId: "employerId"
-            }
-    }
-}
+  name: "employee",
+  schema: EmployeeSchema,
+  metamodels: ["tags", "data"],
+  options: {
+    inlineWithObject: false,
+    data: {
+      schemaName: "metadata",
+      baseDefinition: "contract-meta",
+      derivedDefinition: {
+        origin: "employer",
+        refId: "employerId",
+      },
+    },
+  },
+};

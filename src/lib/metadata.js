@@ -1,7 +1,12 @@
 const { models } = require("../commons/database/app");
 const { flatten } = require("flattenjs");
 
-async function decorateMultiple(objects, { metadata }, contextOrigin, contextId) {
+async function decorateMultiple(
+  objects,
+  { metadata },
+  contextOrigin,
+  contextId
+) {
   let contextIdMap = {};
   if (!contextOrigin) {
     contextOrigin = metadata.derivedDefinition.origin;
@@ -32,7 +37,7 @@ async function decorateMultiple(objects, { metadata }, contextOrigin, contextId)
 
   if (base && base.fields) {
     objects.forEach((item) => {
-      const allFields = base.fields.concat(
+      base.fields.concat(
         (contextIdMap[item[metadata.derivedDefinition.refId]] &&
           contextIdMap[item[metadata.derivedDefinition.refId]].fields) ||
           (contextIdMap[contextId] && contextIdMap[contextId].fields) ||

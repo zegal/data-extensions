@@ -1,5 +1,5 @@
 # Set the base image to Node
-FROM node:10.16.0-alpine
+FROM node:16.20.2-alpine
 LABEL MAINTAINER ANTHONY MICHEL "anthony.michel@zegal.com"
 
 # Define working directory

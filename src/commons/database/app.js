@@ -1,4 +1,4 @@
-const Mongoose = require("mongoose").Mongoose; // to make diff instance of mongoose as we have to connect 2 db
+const Mongoose = require("mongoose").Mongoose; // To create multiple instances of Mongoose
 const fs = require("fs");
 const { log } = require("../logger/app");
 
@@ -16,57 +16,57 @@ let modelsDir = __dirname + "/" + MODEL_DIR;
 
 function createConnection(key, uri) {
   console.log(`Creating connection for: ${key}`);
-  let mongoose = new Mongoose();
-  mongoose.connect(uri, {
-    useNewUrlParser: true,
-    useFindAndModify: false,
-    useUnifiedTopology: true,
+  const mongoose = new Mongoose();
+
+  mongoose.connect(uri).catch((err) => {
+    log.error(err, `${key}: Failed to connect to MongoDB`);
   });
 
-  let connection = mongoose.connection;
+  const connection = mongoose.connection;
 
-  connection.on("error", function (err) {
-    log.info(err, `${key}: Mongo connection error`);
+  connection.on("error", (err) => {
+    log.error(err, `${key}: MongoDB connection error`);
   });
 
-  connection.on("connecting", function () {
+  connection.on("connecting", () => {
     log.info(`${key}: Connecting to MongoDB...`);
   });
 
-  connection.on("connected", function () {
-    log.info(`${key}: Connected`);
+  connection.on("connected", () => {
+    log.info(`${key}: Connected to MongoDB`);
   });
-  connection.on("reconnected", function () {
+
+  connection.on("reconnected", () => {
     log.info(`${key}: MongoDB reconnected!`);
   });
 
-  connection.on("disconnected", function () {
-    log.info(`${key}: MongoDB disconnected!`);
+  connection.on("disconnected", () => {
+    log.warn(`${key}: MongoDB disconnected`);
   });
 
   return mongoose;
 }
 
 function loadModels(mongoose, module = "data") {
-  let dir = `${modelsDir}${module}`;
-  fs.readdirSync(dir).forEach(function (file) {
-    let schemaName = file.split(".")[0];
-
+  const dir = `${modelsDir}${module}`;
+  fs.readdirSync(dir).forEach((file) => {
+    const schemaName = file.split(".")[0];
     const schemaFile = dir + "/" + schemaName;
+
     const schema = require(schemaFile);
 
-    // schema names are lower case
+    // Schema names are stored in lowercase
     schemas[schemaName] = schema;
     models[schemaName] = mongoose.model(schemaName, schema);
   });
 }
 
-function init({ loadModels = true }) {
-  for (let key in connEnvVariables) {
-    let uri = connEnvVariables[key];
-    let mongoose = createConnection(key, uri);
+function init({ loadModels: shouldLoadModels = true }) {
+  for (const key in connEnvVariables) {
+    const uri = connEnvVariables[key];
+    const mongoose = createConnection(key, uri);
 
-    if (loadModels) loadModels(mongoose, null, modelsDir + key);
+    if (shouldLoadModels) loadModels(mongoose, key);
     databases[key] = mongoose;
   }
 }

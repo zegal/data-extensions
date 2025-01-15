@@ -6,12 +6,12 @@
 
 const { models } = require("../../../commons/database/app");
 
-const { ObjectId } = require("mongodb");
+const mongoose = require("mongoose");
 
 let router;
 let routerOptions;
 function initRouter(_router, _routerOptions) {
-  console.log("initRouter");
+  console.log("initializing router");
   router = _router;
   routerOptions = _routerOptions;
 
@@ -42,7 +42,7 @@ async function getMeta(schemaName, id, key) {
   return await models[key]
     .findOne({
       origin: schemaName,
-      refId: ObjectId(id),
+      refId: mongoose.Schema.Types.ObjectId(id),
     })
     .lean();
 }
@@ -51,7 +51,7 @@ async function saveMeta(schemaName, id, key, body) {
   return await models[key].findOneAndUpdate(
     {
       origin: schemaName,
-      refId: ObjectId(id),
+      refId: mongoose.Schema.Types.ObjectId(id),
     },
     { [key]: body },
     { new: true, upsert: true }
@@ -119,14 +119,14 @@ function addSchema(schemaName, options) {
             key,
             req.body[keyPath]
           );
-          if(routerOptions.eventEmitter && options.eventName){
-            routerOptions.eventEmitter.emit( options.eventName, {
-              id:   req.params.id,
+          if (routerOptions.eventEmitter && options.eventName) {
+            routerOptions.eventEmitter.emit(options.eventName, {
+              id: req.params.id,
               schemaRoot,
               keyPath,
               schemaName,
               headers: req.headers,
-              response        
+              response,
             });
           }
           res.send(response);
