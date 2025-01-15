@@ -1,126 +1,38 @@
 require("dotenv").config();
-const Mongoose = require("mongoose").Mongoose; // to make diff instance of mongoose as we have to connect 2 db
+const Mongoose = require("mongoose").Mongoose;
+const { describe, expect, test } = require("@jest/globals");
 
-let mongoose = new Mongoose();
-mongoose.connect(process.env.MONGO_DB_URL, {
-    useNewUrlParser: true,
-    useFindAndModify: false,
-    useUnifiedTopology: true,
+const { init, extendMetaData } = require("../src");
+const employeeMetadataExtensionOption = require("./employee-options");
+
+const MONGO_URI = process.env.MONGO_DB_DEN;
+
+describe("This test suit tests the init and extendMetaData", () => {
+  test("Connect with mongodb with mongoose package", async () => {
+    const mongoose = new Mongoose();
+    mongoose.set("strictQuery", true);
+    await mongoose.connect(MONGO_URI);
+
+    // wait and check for the mongoose connection to be ready
+    expect(mongoose.connection.readyState).toBe(1);
+
+    // add the models to the mongoose connection
+    init(mongoose);
+    // the above connection adds 4 models to the mongoose connection
+    expect(Object.keys(mongoose.models).length).toBeGreaterThan(0);
+
+    const EmployeeSchema = extendMetaData(employeeMetadataExtensionOption);
+    mongoose.model("employee", EmployeeSchema);
+    // check if the employee model is included in the mongoose model list
+    expect(Object.keys(mongoose.models).includes("employee")).toBeTruthy();
+
+    // closes mongoose connection
+    await mongoose.connection.close();
+    expect(mongoose.connection.readyState).toBe(0);
+  });
+
+  // just to test jest
+  test("adds 1 + 2 to equal 3", () => {
+    expect(((a, b) => a + b)(1, 2)).toBe(3);
+  });
 });
-
-let dataField = "metadata";
-
-const {init, extendMetaData} = require("../src");
-
-init(mongoose);
-
-let EmployeeSchema = require("../src/db/models/test/employee");
-
-const options = require("./employee-options");
-
-EmployeeSchema = extendMetaData({name: "employee", 
-                                 schema: EmployeeSchema, 
-                                 metamodels: ["tags", "data"], 
-                                 options: options});
-
-let EmployeeModel = mongoose.model("employee", EmployeeSchema);
-
-async function create(data) {
-    let john = new EmployeeModel(data);
-    return await john.save();
-}
-
-async function getEmployees(firstName) {
-    console.log("getEmployees", firstName)
-    let johns = await EmployeeModel.find({firstName: firstName}).lean();
-    johns.forEach(item => {
-        console.log(item);
-    })
-}
-
-async function find(query) {
-    let johns = await EmployeeModel.find(query).lean();
-    johns.forEach(item => {
-        console.log(item);
-    })
-}
-
-async function getEmployeesAgg(firstName) {
-    let johns = await EmployeeModel.aggregate([
-        {$match: {firstName: firstName}}
-    ]).allowDiskUse(true);
-}
-
-async function aggregate(pipeline) {
-    let emps = await EmployeeModel.aggregate(pipeline).allowDiskUse(true);
-    return emps;
-}
-
-async function getOneByName(firstName) {
-    let john = await EmployeeModel.findOne({firstName}).lean();
-    return john;
-}
-
-async function getOneById(id) {
-    let john = await EmployeeModel.findOne({_id: id}).lean();
-    return john;
-}
-
-
-async function updateById(id, john) {
-    await EmployeeModel.updateOne({_id: id}, john);
-    return;
-}
-
-async function updateMany(firstName, john) {
-    await EmployeeModel.updateMany({firstName: firstName}, john);
-    return;
-}
-
-async function deleteOne(query) {
-    await EmployeeModel.deleteOne(query);
-    return;
-}
-
-async function deleteMany(query) {
-    await EmployeeModel.deleteMany(query);
-    return;
-}
-
-async function findOneAndDelete(query) {
-    return await EmployeeModel.findOneAndDelete(query);
-}
-
-async function findOneAndUpdate(query, data) {
-    return await EmployeeModel.findOneAndUpdate(query, data);
-}
-
-async function run() {
-    let john;
-    //john = await create({employerId: "121212", firstName: "John", lastName: "Doe", foo: "bar", [dataField]: {ssn: '11111111', gender: 'm'}, tags: ["vip", "sales"]});
-    //john = await getOneById(john._id);
-
-    //console.log("got john", john)
-    //await deleteOne({_id: john._id});
-    //await findOneAndDelete({_id: john._id});
-    //await deleteMany({firstName: "John"});
-    //console.log("deleted john", john)
-    //console.log("oneById", john)
-    //john = await getOneByName("bob");
-    //console.log("oneByName", john)
-    //john.firstName = "Bob";
-    //john[dataField].ssn = '3333333';
-    //await findOneAndUpdate({_id: john._id}, john);
-    //await updateMany('John', {firstName: 'bob', [dataField]: {ssn: '999999'}});
-    //console.log("updated john", john) */
-    //await getEmployees("John");
-    //await getEmployeesAgg("Bob");
-    // await find({firstName: "Bob", tags: "vip", "metadata.contract.date": {"$gte": "2021-08-01"}});
-    console.log("emps", await aggregate([
-        {$match: {firstName: "Bob", 
-                  tags: "vip"}}
-        ]));
-    process.exit();
-}
-
-run();
