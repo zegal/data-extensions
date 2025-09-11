@@ -42,7 +42,7 @@ async function getMeta(schemaName, id, key) {
   return await models[key]
     .findOne({
       origin: schemaName,
-      refId: mongoose.Schema.Types.ObjectId(id),
+      refId: new mongoose.Types.ObjectId(id),
     })
     .lean();
 }
@@ -51,7 +51,7 @@ async function saveMeta(schemaName, id, key, body) {
   return await models[key].findOneAndUpdate(
     {
       origin: schemaName,
-      refId: mongoose.Schema.Types.ObjectId(id),
+      refId: new mongoose.Types.ObjectId(id),
     },
     { [key]: body },
     { new: true, upsert: true }
