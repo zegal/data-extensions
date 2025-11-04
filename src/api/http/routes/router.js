@@ -16,22 +16,22 @@ function initRouter(_router, _routerOptions) {
   routerOptions = _routerOptions;
 
   if (router) {
-    router.get("/fieldDefinition/:id", (req, res) => {
+    router.get("/fieldDefinition/:id", (req, res, next) => {
       console.log("GET fieldDefinition", req.params.id);
       res.send(req.params.id);
     });
 
-    router.get("/fieldDefinition/byCode/:code", (req, res) => {
+    router.get("/fieldDefinition/byCode/:code", (req, res, next) => {
       console.log("GET fieldDefinition byCode", req.params.code);
       res.send(req.params.code);
     });
 
-    router.post("/fieldDefinition", (req, res) => {
+    router.post("/fieldDefinition", (req, res, next) => {
       console.log("POST fieldDefinition", req.body);
       res.send(req.body);
     });
 
-    router.put("/fieldDefinition/:id", (req, res) => {
+    router.put("/fieldDefinition/:id", (req, res, next) => {
       console.log("PUT fieldDefinition", req.params.id, req.body);
       res.send(req.body);
     });
@@ -146,7 +146,7 @@ function addSchema(schemaName, options) {
     }
   }
   if (router) {
-    router.put(`${schemaRoot}/searchMeta`, (req) => {
+    router.put(`${schemaRoot}/searchMeta`, (req, res, next) => {
       console.log("put searchMeta", schemaName, req.body);
     });
   }
